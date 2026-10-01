@@ -6,14 +6,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import ActionResult, EntryPayload, PageResult
-from app.services.contract import ContractService
+from app.services.contract import CONTRACT_FIELDS, STATUS_ORDER, ContractService
 
 router = APIRouter(prefix="/api/contract", tags=["维保合同"])
 
 service = ContractService()
 
-LIST_FIELDS = ["合同编号", "签约单位", "维保范围", "合同金额", "签约日期", "到期日期", "是否续签", "合同状态"]
-STATUSES = ["待签约", "执行中", "即将到期", "已终止"]
+LIST_FIELDS = CONTRACT_FIELDS
+STATUSES = STATUS_ORDER
 
 
 @router.get("", response_model=PageResult[dict])
@@ -52,7 +52,7 @@ def create_entry(payload: EntryPayload) -> ActionResult:
 def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
     """对单条维保合同执行签订合同、到期续签、终止合同；不允许的动作会被拦下并说明原因。"""
     action = str(payload.values.get("action") or "").strip()
-    entry, message = service.run_action(entry_id, action)
+    entry, message = service.run_action(entry_id, action, payload.values)
     if entry is None:
         return ActionResult(ok=False, message=message)
     return ActionResult(ok=True, message=message, entry=entry)
